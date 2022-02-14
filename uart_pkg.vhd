@@ -75,6 +75,9 @@ package uart_pkg is
     procedure receive_data_from_uart (
         uart_output : in uart_data_output_group;
         signal received_data : out integer);
+------------------------------------------------------------------------
+    function uart_is_ready ( uart_output : in uart_data_output_group)
+        return boolean;
     
 ------------------------------------------------------------------------
 end package uart_pkg;
@@ -161,5 +164,15 @@ package body uart_pkg is
         
     end receive_data_from_uart;
 ------------------------------------------------------------------------
-end package body uart_pkg;
+    function uart_is_ready
+    (
+        uart_output : in uart_data_output_group
+    )
+    return boolean
+    is
+    begin
 
+        return uart_data_packet_has_been_received(uart_output.uart_transreceiver_data_out);
+    end uart_is_ready;
+------------------------------------------------------------------------
+end package body uart_pkg;
