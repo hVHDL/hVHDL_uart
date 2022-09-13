@@ -2,8 +2,8 @@ library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
 
-library work;
     use work.uart_transreceiver_pkg.all;
+    use work.uart_transreceiver_data_type_pkg.all;
 
 package uart_pkg is
 
@@ -157,11 +157,11 @@ package body uart_pkg is
         uart_output : in uart_data_output_group;
         signal received_data : out integer
     ) is
-        variable unsigned_data : unsigned(15 downto 0);
+        variable unsigned_data : unsigned(uart_data_packet_type'range);
     begin
         if uart_data_packet_has_been_received(uart_output.uart_transreceiver_data_out) then
             unsigned_data := unsigned(get_received_data_packet(uart_output.uart_transreceiver_data_out));
-            received_data <= to_integer(unsigned_data);
+            received_data <= to_integer(unsigned_data(15 downto 0));
         end if;
         
     end receive_data_from_uart;
