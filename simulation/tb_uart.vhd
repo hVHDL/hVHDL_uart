@@ -106,8 +106,8 @@ begin
 
     u_uart : uart
     port map( uart_clocks,
-    	  uart_FPGA_in,
-    	  uart_FPGA_out,
-    	  uart_data_in,
-    	  uart_data_out);
+    	  uart_FPGA_in.uart_transreceiver_FPGA_in.uart_rx_FPGA_in.uart_rx => uart_FPGA_in.uart_transreceiver_FPGA_in.uart_rx_FPGA_in.uart_rx,
+    	  uart_FPGA_out.uart_transreceiver_FPGA_out.uart_tx_FPGA_out.uart_tx => uart_FPGA_in.uart_transreceiver_FPGA_in.uart_rx_FPGA_in.uart_rx,
+    	  uart_data_in => uart_data_in,
+    	  uart_data_out => uart_data_out);
 end sim;

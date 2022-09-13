@@ -1,0 +1,6 @@
+*.vhd                                                          
+uart_transreceiver/uart_transreceiver_pkg.vhd                  
+uart_transreceiver/uart_transreceiver.vhd                  
+uart_transreceiver/uart_rx/*.vhd                           
+uart_transreceiver/uart_tx/*.vhd                           
+simulation/*.vhd                                           

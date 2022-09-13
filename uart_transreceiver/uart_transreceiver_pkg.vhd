@@ -2,9 +2,9 @@ library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
 
-library work;
     use work.uart_rx_pkg.all;
     use work.uart_tx_pkg.all;
+    use work.uart_transreceiver_data_type_pkg.uart_data_packet_type;
 
 package uart_transreceiver_pkg is
 
@@ -22,16 +22,16 @@ package uart_transreceiver_pkg is
     
     type uart_transreceiver_data_input_group is record
         uart_tx_data_in : uart_tx_data_input_group;
-        uart_data_packet : std_logic_vector(15 downto 0);
+        uart_data_packet : uart_data_packet_type;
         uart_data_packet_transmission_is_requested : boolean;
     end record;
     
     type uart_transreceiver_data_output_group is record
-        received_data_packet : std_logic_vector(15 downto 0);
-        uart_data_packet_is_received : boolean;
+        received_data_packet                   : uart_data_packet_type;
+        uart_data_packet_is_received           : boolean;
         uart_data_packet_transmission_is_ready : boolean;
-        uart_tx_data_out : uart_tx_data_output_group;
-        uart_rx_data_out : uart_rx_data_output_group;
+        uart_tx_data_out                       : uart_tx_data_output_group;
+        uart_rx_data_out                       : uart_rx_data_output_group;
     end record;
     
     component uart_transreceiver is
@@ -103,7 +103,7 @@ package body uart_transreceiver_pkg is
     ) is
     begin
         uart_transreceiver_in.uart_data_packet_transmission_is_requested <= true;
-        uart_transreceiver_in.uart_data_packet <= data_packet;
+        uart_transreceiver_in.uart_data_packet(15 downto 0) <= data_packet;
 
     end transmit_16_bit_word_with_uart;
 

@@ -5,8 +5,9 @@ SET project_root=%%F
 )
 SET source=%project_root%/../
 
-            ghdl -a --ieee=synopsys --std=08 %source%/uart/uart_transreceiver/uart_tx/uart_tx_pkg.vhd
-            ghdl -a --ieee=synopsys --std=08 %source%/uart/uart_transreceiver/uart_rx/uart_rx_pkg.vhd
-        ghdl -a --ieee=synopsys --std=08 %source%/uart/uart_transreceiver/uart_transreceiver_pkg.vhd
-    ghdl -a --ieee=synopsys --std=08 %source%/uart/uart_pkg.vhd
-
+ghdl -a --ieee=synopsys --std=08 %source%/hVHDL_uart/uart_transreceiver/uart_tx/uart_tx_pkg.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/hVHDL_uart/uart_transreceiver/uart_rx/uart_rx_pkg.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/hVHDL_uart/uart_transreceiver/uart_transreceiver_data_type_15_bit_pkg.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/hVHDL_uart/uart_transreceiver/uart_transreceiver_pkg.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/hVHDL_uart/uart_transreceiver/uart_transreceiver.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/hVHDL_uart/uart_pkg.vhd
