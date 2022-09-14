@@ -16,7 +16,7 @@ architecture rtl of uart_transreceiver is
     signal uart_data_packet_transmission_is_ready : boolean;
 
     signal uart_rx_data_packet : std_logic_vector(39 downto 0) := (others => '0');
-    signal uart_rx_word_counter : natural range 0 to 1 := 0;
+    signal uart_rx_word_counter : natural range 0 to 7 := 0;
     signal uart_data_packet_is_received : boolean;
     signal uart_rx_watchdog_timer : natural range 0 to 2**16-1 := 0;
 
@@ -43,7 +43,7 @@ begin
     begin
         if rising_edge(clock) then
 
-            if delay_between_data_packet_transmissions /= 0 then
+            if delay_between_data_packet_transmissions > 0 then
                 delay_between_data_packet_transmissions <= delay_between_data_packet_transmissions - 1;
             end if;
 
@@ -82,27 +82,27 @@ begin
             end CASE;
 
         --------------------------------------------------
-            if uart_rx_watchdog_timer /= 0 then 
+            if uart_rx_watchdog_timer > 0 then 
                 uart_rx_watchdog_timer <= uart_rx_watchdog_timer - 1;
             end if;
 
             if uart_rx_watchdog_timer = 1 then
-                uart_rx_word_counter <= 0;
+                uart_rx_word_counter <= 4;
             end if;
 
             uart_data_packet_is_received <= false;
             if uart_rx_data_is_ready(uart_rx_data_out) then
-                uart_rx_data_packet <= uart_rx_data_packet(uart_rx_data_packet'left downto 8) & get_uart_rx_data(uart_rx_data_out);
-                if uart_rx_word_counter = 0 then
-                    uart_rx_word_counter <= 1;
-                    uart_rx_watchdog_timer <= 500;
+                uart_rx_watchdog_timer <= 500;
+                uart_rx_data_packet    <= uart_rx_data_packet(uart_rx_data_packet'left downto 8) & get_uart_rx_data(uart_rx_data_out);
+                if uart_rx_word_counter > 0 then
+                    uart_rx_word_counter <= uart_rx_word_counter - 1;
                 else
-                    uart_rx_word_counter <= 0;
+                    uart_rx_word_counter <= 4;
                     uart_rx_watchdog_timer <= 0;
                     uart_data_packet_is_received <= true; 
                 end if;
             end if;
-
+        --------------------------------------------------
 
         end if; --rising_edge
     end process uart_transmit_package_manager;	
