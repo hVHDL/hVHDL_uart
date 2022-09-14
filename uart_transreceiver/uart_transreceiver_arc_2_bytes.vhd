@@ -1,6 +1,7 @@
 
 architecture rtl of uart_transreceiver is
 
+    use work.uart_transreceiver_data_type_pkg.uart_data_packet_type;
     alias clock is uart_transreceiver_clocks.clock;
 
     signal uart_rx_clocks   : uart_rx_clock_group;
@@ -15,10 +16,15 @@ architecture rtl of uart_transreceiver is
     signal packet_counter : natural range 0 to 3;
     signal uart_data_packet_transmission_is_ready : boolean;
 
-    signal uart_rx_data_packet : std_logic_vector(15 downto 0) := (others => '0');
+    signal transmission_is_requested : boolean := false;
+    signal uart_tx_data_packet : uart_data_packet_type := (others => '0');
+    signal uart_rx_data_packet : uart_data_packet_type := (others => '0');
     signal uart_rx_word_counter : natural range 0 to 1 := 1;
     signal uart_data_packet_is_received : boolean;
     signal uart_rx_watchdog_timer : natural range 0 to 2**16-1 := 0;
+
+    type list_of_uart_transmitter_states is (wait_for_transmit_request, uart_transmission_is_in_progress);
+    signal uart_transmitter_state : list_of_uart_transmitter_states := wait_for_transmit_request;
 
 begin
 
@@ -34,55 +40,61 @@ begin
 ------------------------------------------------------------------------
     uart_transmit_package_manager : process(clock)
 
-        type list_of_uart_transmitter_states is (wait_for_transmit_request, uart_transmission_is_in_progress);
-        variable uart_transmitter_state : list_of_uart_transmitter_states := wait_for_transmit_request;
 
         type list_of_uart_receiver_states is (wait_for_first_packet_ready, wait_for_second_packet_ready);
         variable uart_receiver_state : list_of_uart_receiver_states;
         
     begin
         if rising_edge(clock) then
+            init_uart(uart_tx_data_in);
 
-            if delay_between_data_packet_transmissions /= 0 then
+            if delay_between_data_packet_transmissions > 0 then
                 delay_between_data_packet_transmissions <= delay_between_data_packet_transmissions - 1;
             end if;
 
+            if transmission_is_requested then
+                transmit_8bit_data_package(uart_tx_data_in, uart_tx_data_packet(uart_tx_data_packet'left downto uart_tx_data_packet'left-7));
+                uart_tx_data_packet <= uart_tx_data_packet(uart_tx_data_packet'left-8 downto 0) & x"00";
+            end if;
+
             uart_data_packet_transmission_is_ready <= false;
-            init_uart(uart_tx_data_in);
+            transmission_is_requested <= false;
             CASE uart_transmitter_state is
                 WHEN wait_for_transmit_request =>
-                    uart_transmitter_state := wait_for_transmit_request;
+                    uart_transmitter_state <= wait_for_transmit_request;
                     packet_counter <= 0;
 
                     if uart_transreceiver_data_in.uart_data_packet_transmission_is_requested then
-                        packet_counter <= packet_counter + 1;
-                        transmit_8bit_data_package(uart_tx_data_in, uart_transreceiver_data_in.uart_data_packet(15 downto 8));
-                        uart_transmitter_state := uart_transmission_is_in_progress;
+                        packet_counter <= 1;
+                        uart_tx_data_packet <= uart_transreceiver_data_in.uart_data_packet;
+                        transmission_is_requested <= true;
+                        uart_transmitter_state <= uart_transmission_is_in_progress;
                     end if;
 
                 WHEN uart_transmission_is_in_progress =>
 
-                    uart_transmitter_state := uart_transmission_is_in_progress;
+                    uart_transmitter_state <= uart_transmission_is_in_progress;
 
                     if uart_tx_is_ready(uart_tx_data_out) then
                         delay_between_data_packet_transmissions <= 40;
                     end if;
 
                     if delay_between_data_packet_transmissions = 1 then
-                        packet_counter <= packet_counter + 1;
-                        transmit_8bit_data_package(uart_tx_data_in, uart_transreceiver_data_in.uart_data_packet(7 downto 0));
+                        transmission_is_requested <= true;
+                        packet_counter <= packet_counter - 1;
                     end if;
 
-                    if uart_tx_is_ready(uart_tx_data_out) and packet_counter = 2 then
-                        uart_transmitter_state := wait_for_transmit_request;
+                    if uart_tx_is_ready(uart_tx_data_out) and packet_counter = 0 then
+                        uart_transmitter_state <= wait_for_transmit_request;
                         uart_data_packet_transmission_is_ready <= true;
-                        packet_counter <= 0;
+                        packet_counter <= 1;
+                        delay_between_data_packet_transmissions <= 0;
                     end if; 
 
             end CASE;
 
         --------------------------------------------------
-            if uart_rx_watchdog_timer /= 0 then 
+            if uart_rx_watchdog_timer > 0 then 
                 uart_rx_watchdog_timer <= uart_rx_watchdog_timer - 1;
             end if;
 

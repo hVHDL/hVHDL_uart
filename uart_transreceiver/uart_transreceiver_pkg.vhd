@@ -103,7 +103,7 @@ package body uart_transreceiver_pkg is
     ) is
     begin
         uart_transreceiver_in.uart_data_packet_transmission_is_requested <= true;
-        uart_transreceiver_in.uart_data_packet(15 downto 0) <= data_packet;
+        uart_transreceiver_in.uart_data_packet <= (15 downto 0 =>data_packet, others => '0');
 
     end transmit_16_bit_word_with_uart;
 

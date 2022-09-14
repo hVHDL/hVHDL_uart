@@ -109,7 +109,7 @@ package body uart_pkg is
         data_to_be_transmitted_with_uart : std_logic_vector
     ) is
     begin
-        -- uart_input.uart_tx_data <= data_to_be_transmitted_with_uart;
+        -- uart_input.uart_tx_data <= (15 downto 0 => data_to_be_transmitted_with_uart, others => '0');
         
     end load_16_bit_data_to_uart;
 
@@ -131,10 +131,10 @@ package body uart_pkg is
         signal uart_input : out uart_data_input_group;
         data_to_be_transmitted_with_uart : integer
     ) is
-        variable unsigned_data : unsigned(15 downto 0);
+        variable unsigned_data : unsigned(uart_data_packet_type'range);
     begin
-        unsigned_data := to_unsigned(data_to_be_transmitted_with_uart,16); 
-        transmit_16_bit_word_with_uart(uart_input.uart_transreceiver_data_in, std_logic_vector(unsigned_data));
+        unsigned_data := to_unsigned(data_to_be_transmitted_with_uart,uart_data_packet_type'length); 
+        transmit_16_bit_word_with_uart(uart_input.uart_transreceiver_data_in, std_logic_vector(unsigned_data(15 downto 0)));
         
     end transmit_16_bit_word_with_uart;
 
@@ -145,10 +145,10 @@ package body uart_pkg is
     )
     return integer
     is
-        variable unsigned_data : unsigned(15 downto 0);
+        variable unsigned_data : unsigned(uart_data_packet_type'range);
     begin
         unsigned_data := unsigned(get_received_data_packet(uart_output.uart_transreceiver_data_out));
-        return to_integer(unsigned_data);
+        return to_integer(unsigned_data(15 downto 0));
     end get_uart_rx_data;
 
 ------------------------------------------------------------------------

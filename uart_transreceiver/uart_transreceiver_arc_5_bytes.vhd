@@ -1,6 +1,7 @@
 
 architecture rtl of uart_transreceiver is
 
+    use work.uart_transreceiver_data_type_pkg.uart_data_packet_type;
     alias clock is uart_transreceiver_clocks.clock;
 
     signal uart_rx_clocks   : uart_rx_clock_group;
@@ -15,9 +16,9 @@ architecture rtl of uart_transreceiver is
     signal packet_counter : natural range 0 to 7 := 4;
     signal uart_data_packet_transmission_is_ready : boolean;
 
-    signal uart_tx_data_packet : std_logic_vector(39 downto 0) := (others => '0');
+    signal uart_tx_data_packet : std_logic_vector(uart_data_packet_type'range) := (others => '0');
 
-    signal uart_rx_data_packet : std_logic_vector(39 downto 0) := (others => '0');
+    signal uart_rx_data_packet : std_logic_vector(uart_data_packet_type'range) := (others => '0');
     signal uart_rx_word_counter : natural range 0 to 7 := 4;
     signal uart_data_packet_is_received : boolean;
     signal uart_rx_watchdog_timer : natural range 0 to 2**16-1 := 0;
@@ -108,8 +109,7 @@ begin
 
             uart_data_packet_is_received <= false;
             if uart_rx_data_is_ready(uart_rx_data_out) then
-                testi <= testi + 1;
-                uart_rx_watchdog_timer <= 800;
+                uart_rx_watchdog_timer <= 1800;
                 uart_rx_data_packet    <= uart_rx_data_packet(uart_rx_data_packet'left-8 downto 0) & get_uart_rx_data(uart_rx_data_out);
                 if uart_rx_word_counter > 0 then
                     uart_rx_word_counter <= uart_rx_word_counter - 1;
