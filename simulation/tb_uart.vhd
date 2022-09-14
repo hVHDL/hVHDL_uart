@@ -4,36 +4,31 @@ LIBRARY std  ;
     USE ieee.std_logic_1164.all  ; 
     use ieee.math_real.all;
 
-library work;
     use work.uart_pkg.all;
 
 library vunit_lib;
-    use vunit_lib.run_pkg.all;
+    context vunit_lib.vunit_context;
 
 entity tb_uart is
   generic (runner_cfg : string);
 end;
 
 architecture sim of tb_uart is
-    signal rstn : std_logic;
 
-    signal simulation_running : boolean;
-    signal simulator_clock : std_logic;
-    signal clocked_reset : std_logic;
+    signal simulation_running : boolean := false;
+    signal simulator_clock : std_logic := '0';
+    signal clocked_reset : std_logic := '0';
     constant clock_per : time := 1 ns;
-    constant clock_half_per : time := 0.5 ns;
-    constant simtime_in_clocks : integer := 800;
+    constant simtime_in_clocks : integer := 8000;
 
-    signal uart_clocks   : uart_clock_group;
-    signal uart_FPGA_in  : uart_FPGA_input_group;
-    signal uart_FPGA_out : uart_FPGA_output_group;
     signal uart_data_in  : uart_data_input_group;
     signal uart_data_out : uart_data_output_group;
 
-    signal simulation_counter : natural := 3;
+    signal simulation_counter : natural := 500;
     signal uart_tx : std_logic;
 
     signal data_from_uart : natural := 0;
+    signal uart_was_run : boolean := false;
 
 begin
 
@@ -44,70 +39,41 @@ begin
         simulation_running <= true;
         wait for simtime_in_clocks*clock_per;
         simulation_running <= false;
+        check(uart_was_run, "uart did not run");
+
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
-------------------------------------------------------------------------
-    sim_clock_gen : process
-    begin
-        simulator_clock <= '0';
-        rstn <= '0';
-        simulator_clock <= '0';
-        wait for clock_half_per;
-        while simulation_running loop
-            wait for clock_half_per;
-                rstn <= '1';
-                simulator_clock <= not simulator_clock;
-            end loop;
-        wait;
-    end process;
+    simulator_clock <= not simulator_clock after clock_per/2.0;
 ------------------------------------------------------------------------
 
-    clocked_reset_generator : process(simulator_clock, rstn)
-        function "-"
-        (
-            left : natural;
-            right : integer
-        )
-        return natural
-        is
-            variable usigned_left : unsigned(30 downto 0);
-            variable usigned_right : unsigned(30 downto 0);
-        begin
-            usigned_left := to_unsigned(left,31);
-            usigned_right := to_unsigned(right,31);
-            return to_integer(usigned_left - usigned_right);
-        end "-";
+    clocked_reset_generator : process(simulator_clock)
     begin
-        if rstn = '0' then
-        -- reset state
-            clocked_reset <= '0';
     
-        elsif rising_edge(simulator_clock) then
-            clocked_reset <= '1';
-            init_uart(uart_data_in);
+        init_uart(uart_data_in);
+        if simulation_counter > 0 then
             simulation_counter <= simulation_counter - 1;
+        end if;
 
-            CASE simulation_counter is
-                when 0 => simulation_counter <= 650;
-                when 3 => 
-                    transmit_16_bit_word_with_uart(uart_data_in, 44252);
-                when others =>
-            end CASE;
+        CASE simulation_counter is
+            when 0 => 
+            when 3 => 
+                transmit_16_bit_word_with_uart(uart_data_in, 44252);
+            when others =>
+        end CASE;
 
-            receive_data_from_uart(uart_data_out, data_from_uart);
-
+        receive_data_from_uart(uart_data_out, data_from_uart);
+        if uart_is_ready(uart_data_out) then
+            uart_was_run <= true;
+        end if;
     
-        end if; -- rstn
     end process clocked_reset_generator;	
 ------------------------------------------------------------------------
 
-    uart_clocks <= (clock => simulator_clock);
-
     u_uart : uart
-    port map( uart_clocks,
-    	  uart_FPGA_in.uart_transreceiver_FPGA_in.uart_rx_FPGA_in.uart_rx => uart_FPGA_in.uart_transreceiver_FPGA_in.uart_rx_FPGA_in.uart_rx,
-    	  uart_FPGA_out.uart_transreceiver_FPGA_out.uart_tx_FPGA_out.uart_tx => uart_FPGA_in.uart_transreceiver_FPGA_in.uart_rx_FPGA_in.uart_rx,
-    	  uart_data_in => uart_data_in,
+    port map( uart_clocks.clock => simulator_clock,
+    	  uart_FPGA_in.uart_transreceiver_FPGA_in.uart_rx_FPGA_in.uart_rx    => uart_tx,
+    	  uart_FPGA_out.uart_transreceiver_FPGA_out.uart_tx_FPGA_out.uart_tx => uart_tx,
+    	  uart_data_in  => uart_data_in,
     	  uart_data_out => uart_data_out);
 end sim;
