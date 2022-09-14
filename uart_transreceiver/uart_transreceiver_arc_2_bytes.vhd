@@ -1,7 +1,7 @@
 
 architecture rtl of uart_transreceiver is
 
-    use work.uart_transreceiver_data_type_pkg.uart_data_packet_type;
+    use work.uart_transreceiver_data_type_pkg.all;
     alias clock is uart_transreceiver_clocks.clock;
 
     signal uart_rx_clocks   : uart_rx_clock_group;
@@ -13,7 +13,7 @@ architecture rtl of uart_transreceiver is
     signal uart_tx_data_out : uart_tx_data_output_group;
 
     signal delay_between_data_packet_transmissions : natural range 0 to 2**8-1 := 0;
-    signal packet_counter : natural range 0 to 3;
+    signal packet_counter : natural range 0 to 7;
     signal uart_data_packet_transmission_is_ready : boolean;
 
     signal transmission_is_requested : boolean := false;
@@ -62,10 +62,10 @@ begin
             CASE uart_transmitter_state is
                 WHEN wait_for_transmit_request =>
                     uart_transmitter_state <= wait_for_transmit_request;
-                    packet_counter <= 0;
+                    packet_counter <= packet_max_index;
 
                     if uart_transreceiver_data_in.uart_data_packet_transmission_is_requested then
-                        packet_counter <= 1;
+                        packet_counter <= packet_max_index;
                         uart_tx_data_packet <= uart_transreceiver_data_in.uart_data_packet;
                         transmission_is_requested <= true;
                         uart_transmitter_state <= uart_transmission_is_in_progress;
@@ -87,7 +87,7 @@ begin
                     if uart_tx_is_ready(uart_tx_data_out) and packet_counter = 0 then
                         uart_transmitter_state <= wait_for_transmit_request;
                         uart_data_packet_transmission_is_ready <= true;
-                        packet_counter <= 1;
+                        packet_counter <= packet_max_index;
                         delay_between_data_packet_transmissions <= 0;
                     end if; 
 
