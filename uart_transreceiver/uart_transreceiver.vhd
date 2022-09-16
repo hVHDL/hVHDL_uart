@@ -30,13 +30,13 @@ architecture rtl of uart_transreceiver is
     signal uart_tx_data_out : uart_tx_data_output_group;
 
     signal delay_between_data_packet_transmissions : natural range 0 to 2**8-1 := 0;
-    signal packet_counter : natural range 0 to 7;
+    signal packet_counter : natural range 0 to 7 := packet_max_index;
     signal uart_data_packet_transmission_is_ready : boolean;
 
     signal transmission_is_requested : boolean := false;
     signal uart_tx_data_packet : uart_data_packet_type := (others => '0');
     signal uart_rx_data_packet : uart_data_packet_type := (others => '0');
-    signal uart_rx_word_counter : natural range 0 to 1 := 1;
+    signal uart_rx_word_counter : natural range 0 to 7 := 1;
     signal uart_data_packet_is_received : boolean;
     signal uart_rx_watchdog_timer : natural range 0 to 2**16-1 := 0;
 
@@ -102,9 +102,9 @@ begin
                     end if;
 
                     if uart_tx_is_ready(uart_tx_data_out) and packet_counter = 0 then
-                        uart_transmitter_state <= wait_for_transmit_request;
-                        uart_data_packet_transmission_is_ready <= true;
-                        packet_counter <= packet_max_index;
+                        uart_transmitter_state                  <= wait_for_transmit_request;
+                        uart_data_packet_transmission_is_ready  <= true;
+                        packet_counter                          <= packet_max_index;
                         delay_between_data_packet_transmissions <= 0;
                     end if; 
 
@@ -116,19 +116,19 @@ begin
             end if;
 
             if uart_rx_watchdog_timer = 1 then
-                uart_rx_word_counter <= 1;
+                uart_rx_word_counter <= packet_max_index;
             end if;
 
             uart_data_packet_is_received <= false;
             if uart_rx_data_is_ready(uart_rx_data_out) then
-                uart_rx_watchdog_timer <= 500;
+                uart_rx_watchdog_timer <= 5500;
                 uart_rx_data_packet    <= uart_rx_data_packet(uart_rx_data_packet'left-8 downto 0) & get_uart_rx_data(uart_rx_data_out);
                 if uart_rx_word_counter > 0 then
                     uart_rx_word_counter <= uart_rx_word_counter - 1;
                 else
-                    uart_data_packet_is_received <= true; 
-                    uart_rx_word_counter <= 1;
-                    uart_rx_watchdog_timer <= 0;
+                    uart_data_packet_is_received <= true;
+                    uart_rx_word_counter         <= packet_max_index;
+                    uart_rx_watchdog_timer       <= 0;
                 end if;
             end if;
 

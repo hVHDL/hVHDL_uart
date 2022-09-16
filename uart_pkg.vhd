@@ -7,6 +7,8 @@ library ieee;
 
 package uart_pkg is
 
+    subtype uart_data_type is uart_data_packet_type;
+
     type uart_clock_group is record
         clock : std_logic;
     end record;
@@ -78,6 +80,10 @@ package uart_pkg is
 ------------------------------------------------------------------------
     function uart_is_ready ( uart_output : uart_data_output_group)
         return boolean;
+
+------------------------------------------------------------------------
+    function get_uart_rx_data_word ( uart_output : uart_data_output_group)
+        return std_logic_vector;
     
 ------------------------------------------------------------------------
 end package uart_pkg;
@@ -150,6 +156,17 @@ package body uart_pkg is
         unsigned_data := unsigned(get_received_data_packet(uart_output.uart_transreceiver_data_out));
         return to_integer(unsigned_data(15 downto 0));
     end get_uart_rx_data;
+
+------------------------------------------------------------------------
+    function get_uart_rx_data_word
+    (
+        uart_output : uart_data_output_group
+    )
+    return std_logic_vector
+    is
+    begin
+        return get_received_data_packet(uart_output.uart_transreceiver_data_out);
+    end get_uart_rx_data_word;
 
 ------------------------------------------------------------------------
     procedure receive_data_from_uart
