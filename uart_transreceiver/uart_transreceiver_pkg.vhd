@@ -101,9 +101,11 @@ package body uart_transreceiver_pkg is
         signal uart_transreceiver_in : out uart_transreceiver_data_input_group;
         data_packet : in std_logic_vector(15 downto 0)
     ) is
+        variable data_packet_to_beused : std_logic_vector(uart_transreceiver_in.uart_data_packet'range) := (others => '0');
     begin
         uart_transreceiver_in.uart_data_packet_transmission_is_requested <= true;
-        uart_transreceiver_in.uart_data_packet <= (15 downto 0 =>data_packet, others => '0');
+        data_packet_to_beused(15 downto 0) := data_packet;
+        uart_transreceiver_in.uart_data_packet(15 downto 0) <= data_packet_to_beused;
 
     end transmit_16_bit_word_with_uart;
 
