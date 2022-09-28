@@ -76,7 +76,7 @@ begin
             end if;
 
             if uart_rx_data_is_ready(uart_rx_data_out) then
-                check(get_uart_rx_data(uart_rx_data_out) = x"08", "did not get 0xac");
+                check( std_logic_vector'(get_uart_rx_data(uart_rx_data_out)) = x"08", "did not get 0xac");
                 memory(memory_address) <= get_uart_rx_data(uart_rx_data_out);
                 if memory_address < memory_array'high then
                     memory_address <= memory_address + 1;

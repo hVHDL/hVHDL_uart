@@ -29,7 +29,7 @@ package uart_rx_pkg is
         return std_logic_vector;
 ------------------------------------------------------------------------
     function get_uart_rx_data ( uart_rx_out : uart_rx_data_output_group)
-        return integer;
+        return natural;
 ------------------------------------------------------------------------
 end package uart_rx_pkg;
 
@@ -62,7 +62,7 @@ package body uart_rx_pkg is
     (
         uart_rx_out : uart_rx_data_output_group
     )
-    return integer
+    return natural
     is
     begin
         return to_integer(unsigned(uart_rx_out.uart_rx_data));
