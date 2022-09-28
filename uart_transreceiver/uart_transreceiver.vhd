@@ -138,7 +138,7 @@ begin
 
 ------------------------------------------------------------------------
     uart_rx_clocks <= (clock => uart_transreceiver_clocks.clock);
-    u_uart_rx : uart_rx
+    u_uart_rx : entity work.uart_rx
     port map( uart_rx_clocks,
     	  uart_transreceiver_FPGA_in.uart_rx_FPGA_in,
     	  uart_rx_data_in,
@@ -146,7 +146,7 @@ begin
 
 ------------------------------------------------------------------------
     uart_tx_clocks <= (clock => uart_transreceiver_clocks.clock);
-    u_uart_tx : uart_tx
+    u_uart_tx : entity work.uart_tx
     port map( uart_tx_clocks,
     	  uart_transreceiver_FPGA_out.uart_tx_FPGA_out,
     	  uart_tx_data_in,
