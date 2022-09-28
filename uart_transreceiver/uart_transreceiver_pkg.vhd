@@ -105,7 +105,7 @@ package body uart_transreceiver_pkg is
     begin
         uart_transreceiver_in.uart_data_packet_transmission_is_requested <= true;
         data_packet_to_beused(15 downto 0) := data_packet;
-        uart_transreceiver_in.uart_data_packet(15 downto 0) <= data_packet_to_beused;
+        uart_transreceiver_in.uart_data_packet(15 downto 0) <= data_packet_to_beused(15 downto 0);
 
     end transmit_16_bit_word_with_uart;
 
