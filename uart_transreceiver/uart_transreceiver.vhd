@@ -21,11 +21,9 @@ architecture rtl of uart_transreceiver is
     use work.uart_transreceiver_data_type_pkg.all;
     alias clock is uart_transreceiver_clocks.clock;
 
-    signal uart_rx_clocks   : uart_rx_clock_group;
     signal uart_rx_data_in  : uart_rx_data_input_group;
     signal uart_rx_data_out  : uart_rx_data_output_group;
     
-    signal uart_tx_clocks   : uart_tx_clock_group;
     signal uart_tx_data_in  : uart_tx_data_input_group;
     signal uart_tx_data_out : uart_tx_data_output_group;
 
@@ -137,17 +135,15 @@ begin
     end process uart_transmit_package_manager;	
 
 ------------------------------------------------------------------------
-    uart_rx_clocks <= (clock => uart_transreceiver_clocks.clock);
     u_uart_rx : entity work.uart_rx
-    port map( uart_rx_clocks,
+    port map((clock => uart_transreceiver_clocks.clock),
     	  uart_transreceiver_FPGA_in.uart_rx_FPGA_in,
     	  uart_rx_data_in,
     	  uart_rx_data_out); 
 
 ------------------------------------------------------------------------
-    uart_tx_clocks <= (clock => uart_transreceiver_clocks.clock);
     u_uart_tx : entity work.uart_tx
-    port map( uart_tx_clocks,
+    port map((clock => uart_transreceiver_clocks.clock),
     	  uart_transreceiver_FPGA_out.uart_tx_FPGA_out,
     	  uart_tx_data_in,
     	  uart_tx_data_out);
