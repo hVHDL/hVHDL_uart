@@ -28,6 +28,9 @@ package uart_rx_pkg is
     function get_uart_rx_data ( uart_rx_out : uart_rx_data_output_group)
         return std_logic_vector;
 ------------------------------------------------------------------------
+    function get_uart_rx_data ( uart_rx_out : uart_rx_data_output_group)
+        return integer;
+------------------------------------------------------------------------
 end package uart_rx_pkg;
 
 package body uart_rx_pkg is
@@ -54,6 +57,16 @@ package body uart_rx_pkg is
         return uart_rx_out.uart_rx_data; 
     end get_uart_rx_data;
 
+------------------------------------------------------------------------
+    function get_uart_rx_data
+    (
+        uart_rx_out : uart_rx_data_output_group
+    )
+    return integer
+    is
+    begin
+        return to_integer(unsigned(uart_rx_out.uart_rx_data));
+    end get_uart_rx_data;
 ------------------------------------------------------------------------
 end package body uart_rx_pkg;
 
