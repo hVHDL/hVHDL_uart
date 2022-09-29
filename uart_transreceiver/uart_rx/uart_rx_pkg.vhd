@@ -168,7 +168,7 @@ begin
 
                 WHEN receive_data =>
                     counter_for_data_bit <= counter_for_data_bit + input_buffer(input_buffer'left);
-                    if receive_bit_counter /= 0 then
+                    if receive_bit_counter > 0 then
                         receive_bit_counter <= receive_bit_counter - 1;
                     else 
                         receive_bit_counter <= bit_counter_high;
