@@ -4,7 +4,7 @@ library ieee;
 
 package uart_tx_pkg is
 
-    constant clock_in_uart_bit : natural := 24;
+    constant clock_in_uart_bit : natural := 1043;
     constant bit_counter_high : natural := clock_in_uart_bit - 1;
     constant total_number_of_transmitted_bits_per_word : natural := 10;
 
@@ -98,7 +98,7 @@ architecture rtl of uart_tx is
     alias clock is uart_tx_clocks.clock;
 
     signal transmit_register : std_logic_vector(9 downto 0) := (others => '1');
-    signal transmit_bit_counter : integer range -1 to 127;
+    signal transmit_bit_counter : natural range 0 to 2047;
     signal transmit_data_bit_counter : natural range 0 to 15; 
 
 begin
