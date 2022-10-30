@@ -4,9 +4,7 @@ library ieee;
 
 package uart_tx_pkg is
 
-    constant clock_in_uart_bit : natural := 1043;
-    constant bit_counter_high : natural := clock_in_uart_bit - 1;
-    constant total_number_of_transmitted_bits_per_word : natural := 10;
+    subtype uint12 is integer range 0 to 2**12-1;
 
     type uart_tx_clock_group is record
         clock : std_logic;
@@ -19,6 +17,7 @@ package uart_tx_pkg is
     type uart_tx_data_input_group is record
         uart_transmit_is_requested : boolean;
         data_to_be_transmitted : std_logic_vector(7 downto 0);
+        number_of_clocks_per_bit : uint12;
     end record;
     
     type uart_tx_data_output_group is record
@@ -26,8 +25,16 @@ package uart_tx_pkg is
     end record;
     
 ------------------------------------------------------------------------
+    procedure set_number_of_clocks_per_bit (
+        signal uart_tx_data_in : out uart_tx_data_input_group;
+        set_number_of_clocks_per_bit_to : integer range 0 to 2**12-1);
+------------------------------------------------------------------------
     procedure init_uart (
         signal uart_tx_input : out uart_tx_data_input_group);
+
+    procedure init_uart (
+        signal uart_tx_input : out uart_tx_data_input_group;
+        number_of_clocks_per_bit : uint12);
 ------------------------------------------------------------------------
     procedure transmit_8bit_data_package (
         signal uart_tx_input : out uart_tx_data_input_group;
@@ -43,6 +50,15 @@ end package uart_tx_pkg;
 package body uart_tx_pkg is
 
 ------------------------------------------------------------------------
+    procedure set_number_of_clocks_per_bit
+    (
+        signal uart_tx_data_in : out uart_tx_data_input_group;
+        set_number_of_clocks_per_bit_to : integer range 0 to 2**12-1
+    ) is
+    begin
+        uart_tx_data_in.number_of_clocks_per_bit <= set_number_of_clocks_per_bit_to;
+    end set_number_of_clocks_per_bit;
+------------------------------------------------------------------------
     procedure init_uart
     (
         signal uart_tx_input : out uart_tx_data_input_group
@@ -50,6 +66,17 @@ package body uart_tx_pkg is
     begin
         uart_tx_input.uart_transmit_is_requested <= false;
     end init_uart;
+--------
+    procedure init_uart
+    (
+        signal uart_tx_input : out uart_tx_data_input_group;
+        number_of_clocks_per_bit : uint12
+    ) is
+    begin
+        uart_tx_input.uart_transmit_is_requested <= false;
+        uart_tx_input.number_of_clocks_per_bit <= number_of_clocks_per_bit;
+    end init_uart;
+
 
 ------------------------------------------------------------------------
     procedure transmit_8bit_data_package
@@ -97,6 +124,9 @@ architecture rtl of uart_tx is
 
     alias clock is uart_tx_clocks.clock;
 
+    alias clock_in_uart_bit is uart_tx_data_in.number_of_clocks_per_bit;
+    constant bit_counter_high : natural := clock_in_uart_bit - 1;
+    constant total_number_of_transmitted_bits_per_word : natural := 10;
     signal transmit_register : std_logic_vector(9 downto 0) := (others => '1');
     signal transmit_bit_counter : natural range 0 to 2047;
     signal transmit_data_bit_counter : natural range 0 to 15; 

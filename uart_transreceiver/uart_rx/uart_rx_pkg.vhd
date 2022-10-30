@@ -4,6 +4,8 @@ library ieee;
 
 package uart_rx_pkg is
 
+    subtype uint12 is integer range 0 to 2**12-1;
+
     type uart_rx_clock_group is record
         clock : std_logic;
     end record;
@@ -13,7 +15,7 @@ package uart_rx_pkg is
     end record;
     
     type uart_rx_data_input_group is record
-        clock : std_logic;
+        number_of_clocks_per_bit : uint12;
     end record;
     
     type uart_rx_data_output_group is record
@@ -21,6 +23,10 @@ package uart_rx_pkg is
         uart_rx_data_transmission_is_ready : boolean;
     end record;
     
+------------------------------------------------------------------------
+    procedure set_number_of_clocks_per_bit (
+        signal uart_rx_data_input : out uart_rx_data_input_group;
+        set_number_of_clocks_per_bit_to : integer range 0 to 2**12-1);
 ------------------------------------------------------------------------
     function uart_rx_data_is_ready ( uart_rx_out : uart_rx_data_output_group)
         return boolean;
@@ -31,10 +37,21 @@ package uart_rx_pkg is
     function get_uart_rx_data ( uart_rx_out : uart_rx_data_output_group)
         return natural;
 ------------------------------------------------------------------------
+    
+------------------------------------------------------------------------
 end package uart_rx_pkg;
 
 package body uart_rx_pkg is
 
+------------------------------------------------------------------------
+    procedure set_number_of_clocks_per_bit
+    (
+        signal uart_rx_data_input : out uart_rx_data_input_group;
+        set_number_of_clocks_per_bit_to : integer range 0 to 2**12-1
+    ) is
+    begin
+        uart_rx_data_input.number_of_clocks_per_bit <= set_number_of_clocks_per_bit_to;
+    end set_number_of_clocks_per_bit;
 ------------------------------------------------------------------------
     function uart_rx_data_is_ready
     (
@@ -93,8 +110,8 @@ architecture rtl of uart_rx is
 
     alias clock is uart_rx_clocks.clock;
 
-    constant clock_in_uart_bit : natural := 1043;
-    constant bit_counter_high : natural := clock_in_uart_bit - 1;
+    alias clock_in_uart_bit is uart_rx_data_in.number_of_clocks_per_bit;
+    signal bit_counter_high : natural := clock_in_uart_bit - 1;
 
     signal receive_register                    : std_logic_vector(9 downto 0)  := (others => '0');
     signal receive_bit_counter                 : natural range 0 to 2047        := bit_counter_high/2;
@@ -104,7 +121,7 @@ architecture rtl of uart_rx is
     signal uart_rx_data_transmission_is_ready  : boolean                       := false;
 
 
-    signal counter_for_data_bit : natural range 0 to 2047:= 0; 
+    signal counter_for_data_bit : uint12 := 0;
 
     constant total_number_of_transmitted_bits_per_word : integer := 10;
     type list_of_uart_rx_states is (wait_for_start_bit, receive_data);
