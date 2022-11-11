@@ -125,7 +125,7 @@ architecture rtl of uart_tx is
     alias clock is uart_tx_clocks.clock;
 
     alias clock_in_uart_bit is uart_tx_data_in.number_of_clocks_per_bit;
-    constant bit_counter_high : natural := clock_in_uart_bit - 1;
+    signal bit_counter_high : natural := clock_in_uart_bit - 1;
     constant total_number_of_transmitted_bits_per_word : natural := 10;
     signal transmit_register : std_logic_vector(9 downto 0) := (others => '1');
     signal transmit_bit_counter : natural range 0 to 2047;
@@ -134,6 +134,7 @@ architecture rtl of uart_tx is
 begin
 
     uart_tx_FPGA_out <= (uart_tx => transmit_register(transmit_register'right));
+    bit_counter_high <= clock_in_uart_bit - 1;
 
 ------------------------------------------------------------------------
     uart_transmitter : process(clock)

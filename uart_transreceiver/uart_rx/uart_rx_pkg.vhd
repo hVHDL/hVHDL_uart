@@ -129,6 +129,7 @@ architecture rtl of uart_rx is
 
 begin
 
+    bit_counter_high <= clock_in_uart_bit - 1;
     uart_rx_data_out <= (uart_rx_data                      => received_data,
                         uart_rx_data_transmission_is_ready => uart_rx_data_transmission_is_ready);
 
