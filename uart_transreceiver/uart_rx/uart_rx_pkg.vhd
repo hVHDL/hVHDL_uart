@@ -111,10 +111,10 @@ architecture rtl of uart_rx is
     alias clock is uart_rx_clocks.clock;
 
     alias clock_in_uart_bit is uart_rx_data_in.number_of_clocks_per_bit;
-    signal bit_counter_high : natural := clock_in_uart_bit - 1;
+    signal bit_counter_high : natural;
 
     signal receive_register                    : std_logic_vector(9 downto 0)  := (others => '0');
-    signal receive_bit_counter                 : natural range 0 to 2047        := bit_counter_high/2;
+    signal receive_bit_counter                 : natural range 0 to 2047;
     signal counter_for_number_of_received_bits : natural range 0 to 15         := 0;
     signal received_data                       : std_logic_vector(7 downto 0);
     signal input_buffer                        : std_logic_vector(1 downto 0);

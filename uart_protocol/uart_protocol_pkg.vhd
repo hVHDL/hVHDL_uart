@@ -196,9 +196,11 @@ package body uart_protocol_pkg is
     return base_array 
     is
         variable uint_number : unsigned(15 downto 0);
+        variable return_value : base_array(1 downto 0);
     begin
         uint_number := to_unsigned(number,16);
-        return (std_logic_vector(uint_number(15 downto 8)) , std_logic_vector(uint_number(7 downto 0)));
+        return_value := (std_logic_vector(uint_number(15 downto 8)) , std_logic_vector(uint_number(7 downto 0)));
+        return return_value;
     end int_to_bytes;
 --------------------------------------------------
     function bytes_to_int
@@ -218,9 +220,11 @@ package body uart_protocol_pkg is
     return base_array 
     is
         variable uint_number : unsigned(23 downto 0);
+        variable return_value : base_array(2 downto 0);
     begin
         uint_number := to_unsigned(number,24);
-        return (std_logic_vector(uint_number(23 downto 16)) ,std_logic_vector(uint_number(15 downto 8)) , std_logic_vector(uint_number(7 downto 0)));
+        return_value := (std_logic_vector(uint_number(23 downto 16)) ,std_logic_vector(uint_number(15 downto 8)) , std_logic_vector(uint_number(7 downto 0)));
+        return return_value;
     end int24_to_bytes;
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
