@@ -10,6 +10,7 @@ package uart_protocol_pkg is
     constant read_is_requested_from_address_from_uart : integer := 2;
     constant write_to_address_is_requested_from_uart  : integer := 4;
     constant stream_data_from_address                 : integer := 5;
+    constant request_stream_from_address              : integer := 6;
 
     type base_array is array (natural range <>) of std_logic_vector(7 downto 0);
     subtype memory_array is base_array(0 to 7);
@@ -91,6 +92,7 @@ package body uart_protocol_pkg is
         uart_tx_out       : in uart_tx_data_output_group
     ) is
         alias m is uart_communcation_object;
+        variable uart_protocol_header : integer;
     begin
         init_uart(uart_tx_in);
         
@@ -129,7 +131,14 @@ package body uart_protocol_pkg is
             if m.number_of_received_words > 0 then
                 m.number_of_received_words <= m.number_of_received_words - 1;
             else
-                m.number_of_received_words <= get_uart_rx_data(uart_rx) mod 8;
+                uart_protocol_header := get_uart_rx_data(uart_rx);
+                CASE uart_protocol_header is
+                    WHEN read_is_requested_from_address_from_uart => m.number_of_received_words <= 2;
+                    WHEN write_to_address_is_requested_from_uart  => m.number_of_received_words <= 4;
+                    WHEN stream_data_from_address                 => m.number_of_received_words <= 5;
+                    WHEN request_stream_from_address              => m.number_of_received_words <= 5;
+                    WHEN others => m.number_of_received_words <= get_uart_rx_data(uart_rx) mod 8;
+                end CASE;
             end if;
 
             if m.number_of_received_words = 1 then
