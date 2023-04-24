@@ -23,11 +23,11 @@ architecture vunit_simulation of uart_test_tb is
     -----------------------------------
     -- simulation specific signals ----
     signal uart_rx_FPGA_in  : uart_rx_FPGA_input_group;
-    signal uart_rx_data_in  : uart_rx_data_input_group;
+    signal uart_rx_data_in  : uart_rx_data_input_group := (number_of_clocks_per_bit => 24);
     signal uart_rx_data_out : uart_rx_data_output_group;
 
     signal uart_tx_FPGA_out  : uart_tx_FPGA_output_group;
-    signal uart_tx_data_in  : uart_tx_data_input_group;
+    signal uart_tx_data_in  : uart_tx_data_input_group := init_uart_tx(number_of_clocks_per_bit =>24);
     signal uart_tx_data_out : uart_tx_data_output_group;
 
     constant time_between_packages : integer := 10;
@@ -61,7 +61,8 @@ begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
 
-            init_uart(uart_tx_data_in);
+            init_uart(uart_tx_data_in, 24);
+            set_number_of_clocks_per_bit(uart_rx_data_in, 24);
 
             if uart_tx_is_ready(uart_tx_data_out) then
                 transmit_timer <= time_between_packages;

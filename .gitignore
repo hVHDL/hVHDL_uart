@@ -6,3 +6,4 @@
 /compile*
 vunit_out
 *.o
+temp/

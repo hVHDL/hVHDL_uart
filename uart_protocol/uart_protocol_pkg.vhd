@@ -33,25 +33,25 @@ package uart_protocol_pkg is
 
 ------------------------------------------------------------------------
     procedure create_uart_protocol (
-        signal uart_communcation_object : inout uart_communcation_record;
+        signal self : inout uart_communcation_record;
         uart_rx        : in uart_rx_data_output_group;
         signal uart_tx_in : out uart_tx_data_input_group;
         uart_tx_out       : in uart_tx_data_output_group);
 ------------------------------------------------------------------------
     procedure transmit_words_with_uart (
-        signal uart_communcation_object : out uart_communcation_record;
+        signal self : out uart_communcation_record;
         data_words_in : base_array );
 
-    function frame_has_been_received ( uart_communcation_object : uart_communcation_record)
+    function frame_has_been_received ( self : uart_communcation_record)
         return boolean;
 
 ------------------------------------------------------------------------
     procedure send_stream_data_packet (
-        signal uart_communcation_object : out uart_communcation_record;
+        signal self : out uart_communcation_record;
         data_words_in : base_array );
 ------------------------------------------------------------------------
     procedure send_stream_data_packet (
-        signal uart_communcation_object : out uart_communcation_record;
+        signal self : out uart_communcation_record;
         data_in : integer);
 ------------------------------------------------------------------------
     function transmit_is_ready ( uart_protocol_object : uart_communcation_record)
@@ -66,13 +66,13 @@ package uart_protocol_pkg is
     function get_number_of_registers_to_stream (uart_protocol_object : uart_communcation_record)
         return integer;
 ------------------------------------------------------------------------
-    function get_command ( uart_communcation_object : uart_communcation_record)
+    function get_command ( self : uart_communcation_record)
         return integer;
 ------------------------------------------------------------------------
-    function get_command_address ( uart_communcation_object : uart_communcation_record)
+    function get_command_address ( self : uart_communcation_record)
         return integer;
 ------------------------------------------------------------------------
-    function get_command_data ( uart_communcation_object : uart_communcation_record)
+    function get_command_data ( self : uart_communcation_record)
         return integer;
 ------------------------------------------------------------------------
     function int24_to_bytes ( number : integer)
@@ -86,65 +86,64 @@ package body uart_protocol_pkg is
 ------------------------------------------------------------------------
     procedure create_uart_protocol
     (
-        signal uart_communcation_object : inout uart_communcation_record;
+        signal self : inout uart_communcation_record;
         uart_rx           : in uart_rx_data_output_group;
         signal uart_tx_in : out uart_tx_data_input_group;
         uart_tx_out       : in uart_tx_data_output_group
     ) is
-        alias m is uart_communcation_object;
         variable uart_protocol_header : integer;
     begin
         init_uart(uart_tx_in);
         
-        m.is_ready <= false;
-        m.is_requested <= false;
+        self.is_ready <= false;
+        self.is_requested <= false;
 
-        if m.number_of_transmitted_words > 0 then
-            if uart_tx_is_ready(uart_tx_out) or m.is_requested then
-                transmit_8bit_data_package(uart_tx_in, m.transmit_buffer(0));
-                m.transmit_buffer <= m.transmit_buffer(1 to 7) & x"00";
-                m.number_of_transmitted_words <= m.number_of_transmitted_words - 1;
+        if self.number_of_transmitted_words > 0 then
+            if uart_tx_is_ready(uart_tx_out) or self.is_requested then
+                transmit_8bit_data_package(uart_tx_in, self.transmit_buffer(0));
+                self.transmit_buffer <= self.transmit_buffer(1 to 7) & x"00";
+                self.number_of_transmitted_words <= self.number_of_transmitted_words - 1;
             end if;
         else
             if uart_tx_is_ready(uart_tx_out) then
-                m.is_ready <= true;
+                self.is_ready <= true;
             end if;
         end if;
 
         --------------------------------------------------
-        m.receive_is_ready <= false;
+        self.receive_is_ready <= false;
 
-        if m.receive_timeout > 0 then
-            m.receive_timeout <= m.receive_timeout - 1;
+        if self.receive_timeout > 0 then
+            self.receive_timeout <= self.receive_timeout - 1;
         end if;
 
-        if m.receive_timeout = 1 then
-            m.number_of_received_words <= 0;
-            m.receive_address <= 0;
+        if self.receive_timeout = 1 then
+            self.number_of_received_words <= 0;
+            self.receive_address <= 0;
         end if;
 
         if uart_rx_data_is_ready(uart_rx) then
-            m.receive_timeout <= 65535;
-            m.receive_buffer(m.receive_address) <= get_uart_rx_data(uart_rx);
-            m.receive_address <= (m.receive_address + 1) mod 8;
+            self.receive_timeout <= 65535;
+            self.receive_buffer(self.receive_address) <= get_uart_rx_data(uart_rx);
+            self.receive_address <= (self.receive_address + 1) mod 8;
 
-            if m.number_of_received_words > 0 then
-                m.number_of_received_words <= m.number_of_received_words - 1;
+            if self.number_of_received_words > 0 then
+                self.number_of_received_words <= self.number_of_received_words - 1;
             else
                 uart_protocol_header := get_uart_rx_data(uart_rx);
                 CASE uart_protocol_header is
-                    WHEN read_is_requested_from_address_from_uart => m.number_of_received_words <= 2;
-                    WHEN write_to_address_is_requested_from_uart  => m.number_of_received_words <= 4;
-                    WHEN stream_data_from_address                 => m.number_of_received_words <= 5;
-                    WHEN request_stream_from_address              => m.number_of_received_words <= 5;
-                    WHEN others => m.number_of_received_words <= get_uart_rx_data(uart_rx) mod 8;
+                    WHEN read_is_requested_from_address_from_uart => self.number_of_received_words <= 2;
+                    WHEN write_to_address_is_requested_from_uart  => self.number_of_received_words <= 4;
+                    WHEN stream_data_from_address                 => self.number_of_received_words <= 5;
+                    WHEN request_stream_from_address              => self.number_of_received_words <= 5;
+                    WHEN others => self.number_of_received_words <= get_uart_rx_data(uart_rx) mod 8;
                 end CASE;
             end if;
 
-            if m.number_of_received_words = 1 then
-                m.receive_is_ready <= true;
-                m.receive_timeout <= 0;
-                m.receive_address <= 0;
+            if self.number_of_received_words = 1 then
+                self.receive_is_ready <= true;
+                self.receive_timeout <= 0;
+                self.receive_address <= 0;
             end if;
         end if;
         
@@ -153,35 +152,32 @@ package body uart_protocol_pkg is
 ------------------------------------------------------------------------
     procedure transmit_words_with_uart
     (
-        signal uart_communcation_object : out uart_communcation_record;
+        signal self : out uart_communcation_record;
         data_words_in : base_array 
     ) is
-        alias m is uart_communcation_object;
     begin
-        m.number_of_transmitted_words <= data_words_in'length+1;
+        self.number_of_transmitted_words <= data_words_in'length+1;
 
-        m.transmit_buffer(0) <= std_logic_vector(to_unsigned(data_words_in'length, 8));
+        self.transmit_buffer(0) <= std_logic_vector(to_unsigned(data_words_in'length, 8));
         for i in 1 to data_words_in'high+1 loop
-            m.transmit_buffer(i) <= data_words_in(i-1);
+            self.transmit_buffer(i) <= data_words_in(i-1);
         end loop;
-        m.is_requested <= true;
+        self.is_requested <= true;
         
     end transmit_words_with_uart;
 ------------------------------------------------------------------------
     procedure send_stream_data_packet
     (
-        signal uart_communcation_object : out uart_communcation_record;
+        signal self : out uart_communcation_record;
         data_words_in : base_array 
     ) is
-        alias m is uart_communcation_object;
     begin
-        m.number_of_transmitted_words <= data_words_in'length;
+        self.number_of_transmitted_words <= data_words_in'length;
 
-        -- m.transmit_buffer(0) <= std_logic_vector(to_unsigned(data_words_in'length, 8));
         for i in data_words_in'high downto 0 loop
-            m.transmit_buffer(i) <= data_words_in(i);
+            self.transmit_buffer(i) <= data_words_in(i);
         end loop;
-        m.is_requested <= true;
+        self.is_requested <= true;
         
     end send_stream_data_packet;
 
@@ -189,12 +185,12 @@ package body uart_protocol_pkg is
 ------------------------------------------------------------------------
     function frame_has_been_received
     (
-        uart_communcation_object : uart_communcation_record
+        self : uart_communcation_record
     )
     return boolean
     is
     begin
-        return uart_communcation_object.receive_is_ready;
+        return self.receive_is_ready;
     end frame_has_been_received;
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
@@ -260,32 +256,32 @@ package body uart_protocol_pkg is
 ------------------------------------------------------------------------
     function get_command
     (
-        uart_communcation_object : uart_communcation_record
+        self : uart_communcation_record
     )
     return integer
     is
     begin
-        return to_integer(unsigned(uart_communcation_object.receive_buffer(0)));
+        return to_integer(unsigned(self.receive_buffer(0)));
     end get_command;
 ------------------------------------------------------------------------
     function get_command_address
     (
-        uart_communcation_object : uart_communcation_record
+        self : uart_communcation_record
     )
     return integer
     is
     begin
-        return bytes_to_int(uart_communcation_object.receive_buffer(1 to 2));
+        return bytes_to_int(self.receive_buffer(1 to 2));
     end get_command_address;
 ------------------------------------------------------------------------
     function get_command_data
     (
-        uart_communcation_object : uart_communcation_record
+        self : uart_communcation_record
     )
     return integer
     is
     begin
-        return bytes_to_int(uart_communcation_object.receive_buffer(3 to 4));
+        return bytes_to_int(self.receive_buffer(3 to 4));
     end get_command_data;
 ------------------------------------------------------------------------
     function get_number_of_registers_to_stream
@@ -312,11 +308,11 @@ package body uart_protocol_pkg is
 ------------------------------------------------------------------------
     procedure send_stream_data_packet
     (
-        signal uart_communcation_object : out uart_communcation_record;
+        signal self : out uart_communcation_record;
         data_in : integer
     ) is
     begin
-        send_stream_data_packet(uart_communcation_object, int_to_bytes(data_in));
+        send_stream_data_packet(self, int_to_bytes(data_in));
         
     end send_stream_data_packet;
 ------------------------------------------------------------------------

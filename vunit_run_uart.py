@@ -5,19 +5,11 @@ from vunit import VUnit
 # ROOT
 ROOT = Path(__file__).resolve().parent
 VU = VUnit.from_argv()
-# VU = VUnit.from_argv(vhdl_standard="93")
-
-def add_sources(lib, filename):
-    with open(filename, "r") as f:
-        for line in f.readlines():
-            lib.add_source_files(ROOT / line.strip())
 
 lib = VU.add_library("lib");
-add_sources(lib,"sources.txt")
-lib.add_source_files(ROOT / "uart_transreceiver/uart_transreceiver_data_type_16_bit_pkg.vhd")
+lib.add_source_files(ROOT / "uart_rx/uart_rx_pkg.vhd")
+lib.add_source_files(ROOT / "uart_tx/uart_tx_pkg.vhd")
 
-lib2 = VU.add_library("lib2");
-add_sources(lib2,"sources.txt")
-lib2.add_source_files(ROOT / "uart_transreceiver/uart_transreceiver_data_type_40_bit_pkg.vhd")
+lib.add_source_files(ROOT / "testbenches/tb_uart_test.vhd")
 
 VU.main()

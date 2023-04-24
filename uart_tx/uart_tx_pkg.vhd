@@ -16,9 +16,12 @@ package uart_tx_pkg is
     
     type uart_tx_data_input_group is record
         uart_transmit_is_requested : boolean;
-        data_to_be_transmitted : std_logic_vector(7 downto 0);
-        number_of_clocks_per_bit : uint12;
+        data_to_be_transmitted     : std_logic_vector(7 downto 0);
+        number_of_clocks_per_bit   : uint12;
     end record;
+
+    function init_uart_tx ( number_of_clocks_per_bit : integer)
+        return uart_tx_data_input_group;
     
     type uart_tx_data_output_group is record
         uart_tx_is_ready : boolean;
@@ -48,6 +51,23 @@ package uart_tx_pkg is
 end package uart_tx_pkg; 
 
 package body uart_tx_pkg is
+
+    function init_uart_tx
+    (
+        number_of_clocks_per_bit : integer
+    )
+    return uart_tx_data_input_group
+    is
+        variable return_value : uart_tx_data_input_group;
+    begin
+        return_value := (
+            uart_transmit_is_requested => false,
+            data_to_be_transmitted     => (others => '0'),
+            number_of_clocks_per_bit   => number_of_clocks_per_bit);
+
+        return return_value;
+        
+    end init_uart_tx;
 
 ------------------------------------------------------------------------
     procedure set_number_of_clocks_per_bit
@@ -185,8 +205,9 @@ begin
                 WHEN transmit =>
                     uart_transmitter_state := transmit;
 
-                    transmit_bit_counter <= transmit_bit_counter - 1;
-                    if transmit_bit_counter = 0 then
+                    if transmit_bit_counter /= 0 then
+                        transmit_bit_counter <= transmit_bit_counter - 1;
+                    else
                         transmit_data_bit_counter <= transmit_data_bit_counter + 1;
                         transmit_bit_counter <= bit_counter_high;
                         shift_and_register(transmit_register); 
