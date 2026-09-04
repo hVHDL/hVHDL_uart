@@ -105,103 +105,124 @@ end entity;
 
 architecture rtl of uart_rx is
 
-    alias clock_in_uart_bit is uart_rx_data_in.number_of_clocks_per_bit;
+    alias clocks_per_bit is uart_rx_data_in.number_of_clocks_per_bit;
 
-    signal receive_register                    : std_logic_vector(9 downto 0)  := (others => '0');
-    signal receive_bit_counter                 : natural range 0 to 2047;
-    signal counter_for_number_of_received_bits : natural range 0 to 15         := 0;
-    signal received_data                       : std_logic_vector(7 downto 0);
-    signal input_buffer                        : std_logic_vector(1 downto 0);
-    signal uart_rx_data_transmission_is_ready  : boolean                       := false;
+    type rx_state_t is (idle, start_bit, data_bits, stop_bit);
+    signal rx_state : rx_state_t := idle;
 
+    -- two-flop synchroniser plus one extra flop for high->low edge detection
+    signal rx_meta : std_logic := '1';
+    signal rx_sync : std_logic := '1';
+    signal rx_prev : std_logic := '1';
 
-    signal counter_for_data_bit : uint12 := 0;
+    signal clk_count    : natural range 0 to 4095 := 0;   -- core clocks into the current bit
+    signal bit_index    : natural range 0 to 7    := 0;
+    signal shift_reg    : std_logic_vector(7 downto 0) := (others => '0');
+    signal bit_votes    : natural range 0 to 3    := 0;   -- '1' samples across the bit
 
-    constant total_number_of_transmitted_bits_per_word : integer := 10;
-    type list_of_uart_rx_states is (wait_for_start_bit, receive_data);
-    signal uart_rx_state : list_of_uart_rx_states := wait_for_start_bit;
+    signal received_data : std_logic_vector(7 downto 0) := (others => '0');
+    signal data_ready    : boolean := false;
 
 begin
 
     uart_rx_data_out <= (uart_rx_data                      => received_data,
-                        uart_rx_data_transmission_is_ready => uart_rx_data_transmission_is_ready);
+                         uart_rx_data_transmission_is_ready => data_ready);
 
+    ------------------------------------------------------------------
+    -- Oversampling receiver: clocks_per_bit core clocks per UART bit
+    -- (set via set_number_of_clocks_per_bit).  Each data bit is decided by
+    -- a majority vote of three samples taken over the middle quarter of the
+    -- bit, and the bit grid is aligned to the start-bit edge, so the
+    -- decision stays correct with a few percent of baud mismatch.  A start
+    -- bit is only accepted on a genuine high->low edge, and the receiver
+    -- re-arms half a bit into the stop bit, so back-to-back frames from a
+    -- slightly faster transmitter do not slip.
+    ------------------------------------------------------------------
     uart_rx_receiver : process(clock)
-
-    --------------------------------------------------
-        function read_bit_as_1_if_counter_higher_than
-        (
-            limit_for_bit_being_high : natural;
-            counter_for_bit : natural 
-        )
-        return std_logic
-        is
-        begin
-            if counter_for_bit > limit_for_bit_being_high then
-                return '1';
-            else
-                return '0';
-            end if;
-            
-        end read_bit_as_1_if_counter_higher_than;
-
-    --------------------------------------------------
-        function "+"
-        (
-            left : integer;
-            right : std_logic 
-        )
-        return integer
-        is
-        begin
-            if right = '1' then
-                return left + 1;
-            else
-                return left;
-            end if;
-        end "+";
-
-    --------------------------------------------------
-        
+        variable half_bit  : natural;
+        variable bit_end   : natural;
+        variable start_end : natural;
+        variable s1, s2, s3 : natural;
     begin
         if rising_edge(clock) then
 
-            input_buffer <= input_buffer(input_buffer'left-1 downto 0) & uart_rx_FPGA_in.uart_rx;
-            uart_rx_data_transmission_is_ready <= false;
+            rx_meta <= uart_rx_FPGA_in.uart_rx;
+            rx_sync <= rx_meta;
+            rx_prev <= rx_sync;
 
-            CASE uart_rx_state is
-                WHEN wait_for_start_bit =>
-                    counter_for_data_bit <= 0;
-                    counter_for_number_of_received_bits <= 0;
-                    uart_rx_state <= wait_for_start_bit;
-                    if input_buffer(input_buffer'left) = '0' then
-                        receive_bit_counter <= clock_in_uart_bit - 1;
-                        uart_rx_state <= receive_data;
+            half_bit := clocks_per_bit / 2;
+            bit_end  := clocks_per_bit - 1;
+            -- the start-bit edge is seen ~2 clocks late through the
+            -- synchroniser; shorten the start bit by that much so the data
+            -- bit grid lands centred on the real bits
+            if clocks_per_bit > 4 then
+                start_end := clocks_per_bit - 3;
+            else
+                start_end := clocks_per_bit - 1;
+            end if;
+            s1 := clocks_per_bit * 3 / 8;             -- three sample points over the
+            s2 := clocks_per_bit / 2;                 -- middle quarter of the bit, so
+            s3 := clocks_per_bit * 5 / 8;             -- the vote survives baud skew
+
+            data_ready <= false;
+
+            CASE rx_state is
+
+                WHEN idle =>
+                    clk_count <= 0;
+                    bit_index <= 0;
+                    bit_votes <= 0;
+                    if rx_prev = '1' and rx_sync = '0' then      -- start-bit edge
+                        rx_state <= start_bit;
                     end if;
 
-                WHEN receive_data =>
-                    counter_for_data_bit <= counter_for_data_bit + input_buffer(input_buffer'left);
-                    if receive_bit_counter > 0 then
-                        receive_bit_counter <= receive_bit_counter - 1;
-                    else 
-                        receive_bit_counter <= clock_in_uart_bit - 1;
-                        counter_for_number_of_received_bits <= counter_for_number_of_received_bits + 1;
+                WHEN start_bit =>
+                    if clk_count = half_bit and rx_sync = '1' then
+                        rx_state  <= idle;                       -- glitch, not a start bit
+                    elsif clk_count >= start_end then
+                        clk_count <= 0;
+                        rx_state  <= data_bits;
+                    else
+                        clk_count <= clk_count + 1;
+                    end if;
 
-                        if counter_for_number_of_received_bits = total_number_of_transmitted_bits_per_word - 1 then
-                            uart_rx_state <= wait_for_start_bit;
-                            counter_for_number_of_received_bits <= 0;
-                            uart_rx_data_transmission_is_ready <= true;
-                            received_data <= receive_register(9 downto 2);
-                        else 
-                            receive_register <= 
-                                read_bit_as_1_if_counter_higher_than((clock_in_uart_bit - 1)/2-1, counter_for_data_bit) & receive_register(receive_register'left downto 1);
-                            counter_for_data_bit <= 0;
+                WHEN data_bits =>
+                    if rx_sync = '1'
+                       and (clk_count = s1 or clk_count = s2 or clk_count = s3) then
+                        bit_votes <= bit_votes + 1;
+                    end if;
+
+                    if clk_count >= bit_end then
+                        clk_count <= 0;
+                        bit_votes <= 0;
+                        if bit_votes >= 2 then                   -- LSB first
+                            shift_reg <= '1' & shift_reg(7 downto 1);
+                        else
+                            shift_reg <= '0' & shift_reg(7 downto 1);
                         end if;
+                        if bit_index >= 7 then
+                            rx_state <= stop_bit;
+                        else
+                            bit_index <= bit_index + 1;
+                        end if;
+                    else
+                        clk_count <= clk_count + 1;
+                    end if;
 
-                    end if; 
+                WHEN stop_bit =>
+                    if clk_count >= half_bit then
+                        received_data <= shift_reg;
+                        data_ready    <= true;
+                        clk_count     <= 0;
+                        bit_index     <= 0;
+                        rx_state      <= idle;
+                    else
+                        clk_count <= clk_count + 1;
+                    end if;
+
             end CASE;
 
         end if; --rising_edge
-    end process uart_rx_receiver;	
+    end process uart_rx_receiver;
 
 end rtl;
